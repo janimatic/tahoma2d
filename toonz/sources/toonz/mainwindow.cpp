@@ -1895,6 +1895,14 @@ void MainWindow::defineActions() {
       QT_TRANSLATE_NOOP("MainWindow", "Export TVPaint JSON File"), "",
       "export_tvpaint");
   createMenuFileAction(
+      MI_ExportGltf,
+      QT_TRANSLATE_NOOP("MainWindow", "Export GL Transmission Format (glTF)"),
+      "", "export_gltf");
+  createMenuFileAction(
+      MI_ImportGltf,
+      QT_TRANSLATE_NOOP("MainWindow", "Import GL Transmission Format (glTF)"),
+      "", "import_gltf");
+  createMenuFileAction(
       "MI_RunScript", QT_TR_NOOP("Run Script..."), "", "run_script",
       tr("Run a script to perform a series of actions on a scene."));
   createMenuFileAction(

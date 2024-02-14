@@ -196,6 +196,8 @@ set(HEADERS
     processor.h
     predict3d.h
     tvpjson_io.h
+    gltfio.h
+    gltfmodel.h
 )
 
 set(SOURCES
@@ -394,7 +396,11 @@ set(SOURCES
     viewereventlogpopup.cpp
     xshbreadcrumbs.cpp
     alignmentpane.cpp
+    gltfio.cpp
+    gltfmodel.cpp
 )
+
+include_directories(${SDKROOT}/tinygltf)
 
 if(WITH_TRANSLATION)
     add_translation(toonz ${HEADERS} ${SOURCES})

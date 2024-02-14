@@ -339,7 +339,10 @@ void TopBar::loadMenubar() {
   }
   fileMenu->addSeparator();
   QMenu *importMenu = fileMenu->addMenu(tr("Import"));
-  { addMenuItem(importMenu, MI_ImportMagpieFile); }
+  { 
+    addMenuItem(importMenu, MI_ImportMagpieFile); 
+    addMenuItem(importMenu, MI_ImportGltf);
+  }
   QMenu *exportMenu = fileMenu->addMenu(tr("Export"));
   {
     addMenuItem(exportMenu, MI_ExportCurrentScene);
@@ -350,6 +353,7 @@ void TopBar::loadMenubar() {
     addMenuItem(exportMenu, MI_StopMotionExportImageSequence);
     addMenuItem(exportMenu, MI_ExportTvpJson);
     addMenuItem(exportMenu, MI_ExportCameraTrack);
+    addMenuItem(exportMenu, MI_ExportGltf);
   }
   fileMenu->addSeparator();
   addMenuItem(fileMenu, MI_PrintXsheet);
