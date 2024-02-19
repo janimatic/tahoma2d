@@ -588,6 +588,7 @@ Camera GltfModel::loadCamera(const tinygltf::Camera &gltf_camera) {
 Animation GltfModel::loadAnimation(const tinygltf::Animation &anim) {
   // https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/base/VulkanglTFModel.cpp
   // https://github.com/HK416/glTF_Animation/blob/master/src/src/Model/model.cpp
+  // bug in blender 3.2 gltf exporter !? https://github.com/KhronosGroup/glTF-Blender-IO/pull/1679
   Animation animation;
   animation.name = anim.name;
   animation.samplers.reserve(anim.samplers.size());
@@ -646,11 +647,11 @@ Animation GltfModel::loadAnimation(const tinygltf::Animation &anim) {
         anim_sampler.outputs.reserve(accessor.count);
         for (size_t i = 0; i < accessor.count; i++) {
           float x = *(reinterpret_cast<const float *>(
-              data_address + 0 * sizeof(double) + i * byte_stride));
+              data_address + 0 * sizeof(float) + i * byte_stride));
           float y = *(reinterpret_cast<const float *>(
-              data_address + 1 * sizeof(double) + i * byte_stride));
+              data_address + 1 * sizeof(float) + i * byte_stride));
           float z = *(reinterpret_cast<const float *>(
-              data_address + 2 * sizeof(double) + i * byte_stride));
+              data_address + 2 * sizeof(float) + i * byte_stride));
           // std::vector<float> transform = {x,y,z};
           // transforms.push_back(transform);
           
@@ -664,13 +665,13 @@ Animation GltfModel::loadAnimation(const tinygltf::Animation &anim) {
         anim_sampler.outputs.reserve(accessor.count);
         for (size_t i = 0; i < accessor.count; i++) {
           float x = *(reinterpret_cast<const float *>(
-              data_address + 0 * sizeof(double) + i * byte_stride));
+              data_address + 0 * sizeof(float) + i * byte_stride));
           float y = *(reinterpret_cast<const float *>(
-              data_address + 1 * sizeof(double) + i * byte_stride));
+              data_address + 1 * sizeof(float) + i * byte_stride));
           float z = *(reinterpret_cast<const float *>(
-              data_address + 2 * sizeof(double) + i * byte_stride));
+              data_address + 2 * sizeof(float) + i * byte_stride));
           float w = *(reinterpret_cast<const float *>(
-              data_address + 3 * sizeof(double) + i * byte_stride));
+              data_address + 3 * sizeof(float) + i * byte_stride));
           //anim_sampler.outputs.emplace_back(x, y, z, w);
           vec4f v = {x, y, z, w};
           anim_sampler.outputs.emplace_back(v);

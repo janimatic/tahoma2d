@@ -5,12 +5,19 @@
 - apply keyframes animations to columns (camera and levels) with matching node name
 - EaseInOut, Linear and Constant interpolations
 - convert full quaternion rotation to euler roll only
+- 2d scale
+- Corrected gltf bezier interpretation, in 2 dimensions (one being implicit)
 
 * TODO
+- fix coordinates space
+- define lengthMultiplier applies to translations (why 16 ? 16 fields ? 16
+inches ?)
 - apply transformations to camera & levels when there is no keyframe animation
 - apply camera settings...
 - ExportGltfCommand...
-- define lengthMultiplier applies to translations (why 16 ? 16 fields ? 16 inches ?)
+- remove tinygltf from cltfmodel.h
+for now, this option should be added to linker to avoid redefinition with header lib :
+/FORCE:MULTIPLE
 
 * REFERENCE
 > gltf animations
@@ -125,11 +132,30 @@ static void addKeyframe(double value, TDoubleKeyframe::Type type, int frame,
                         std::to_string(frame) + " " + object->getName();
   DVGui::info(QString::fromStdString(message));
 }
+static void addKeyframe(double value, TPointD speedIn, TPointD speedOut,
+                        TDoubleKeyframe::Type type, int frame,
+                        TStageObject *object, TStageObject::Channel channel) {
+  TDoubleKeyframe dkf;
+  dkf.m_value = value;
+  dkf.m_speedIn  = speedIn;
+  dkf.m_speedOut = speedOut;
+  dkf.m_type  = type;
+  dkf.m_frame = frame;
+  auto param  = object->getParam(channel);
+  param->setKeyframe(dkf);
+  std::string message = "addKeyframe: " + std::to_string(value) + " " +
+                        std::to_string(frame) + " " + object->getName();
+  DVGui::info(QString::fromStdString(message));
+}
 static void addKeyframes(const std::vector<TDoubleKeyframe> &ks,
                          TStageObject *object, TStageObject::Channel channel) {
   auto param = object->getParam(channel);
   for (auto k : ks) {
-    addKeyframe(k.m_value, k.m_type, k.m_frame, object, channel);
+    if (k.m_type == TDoubleKeyframe::Type::SpeedInOut || k.m_type == TDoubleKeyframe::Type::EaseInOut || k.m_type == TDoubleKeyframe::Type::EaseInOutPercentage)
+      addKeyframe(k.m_value, k.m_speedIn, k.m_speedOut, k.m_type, k.m_frame,
+                  object, channel);
+    else
+      addKeyframe(k.m_value, k.m_type, k.m_frame, object, channel);
   }
 }
 static void setKeyframes(const std::map<int, TDoubleKeyframe> &ks,
@@ -303,7 +329,8 @@ void ImportGltfCommand::execute() {
     std::vector<TDoubleKeyframe> ty;
     std::vector<TDoubleKeyframe> tz;
     std::vector<TDoubleKeyframe> angle;
-    std::vector<TDoubleKeyframe> scale;
+    std::vector<TDoubleKeyframe> sx;
+    std::vector<TDoubleKeyframe> sy;
     for (auto channel : animation.channels) {
       auto sampler = animation.samplers[channel.sampler_id];
       if (sampler.inputs.size() > sampler.outputs.size()) continue;
@@ -313,6 +340,7 @@ void ImportGltfCommand::execute() {
       // https://github.com/KhronosGroup/glTF/issues/1812
       // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#_animation_sampler_interpolation
       float lengthMultiplier = 16.0;  // why 16 ? 16 fields ? 16 inches ?
+      float prevX = 0.0, nextX = 0.0;
       for (size_t i = 0; i < sampler.inputs.size(); i++) {
         int outputIndex = i;
         float frame     = (sampler.inputs[i] * fps) - 1;
@@ -320,44 +348,88 @@ void ImportGltfCommand::execute() {
         keyframe.m_frame = frame;
         if (channel.path_type == PATH_TYPE::TRANSLATION) {
           if (sampler.interpolation == INTERPOLATION_TYPE::CUBICSPLINE) {
-            keyframe.m_type = TDoubleKeyframe::Type::EaseInOut;
-            outputIndex     = (i * 3) + 1;
+            // **** bezier spline support ****
+            // 1 - use blender 3.3 or +
+            // There was bug in blender 3.2 gltf exporter !
+            // https://github.com/KhronosGroup/glTF-Blender-IO/pull/1679
+            // 2 - Correct gltf bezier interpretation, in 2 dimensions (one being implicit)
+            // https://blender.stackexchange.com/questions/269337/what-b%C3%A9zier-animations-can-be-safely-exported-to-gltf
+            // Blender does cubic interpolation in both X and Y directions,
+            //  while glTF does only the Y direction.
+            // A glTF curve exactly converts to a Blender curve where the X
+            //  coordinates of the handles are 1/3 and 2/3 of the way along the
+            //  interval
+            // https://stackoverflow.com/questions/72998566/what-do-the-in-and-out-tangents-in-gltfs-cubic-splines-visually-represent
+            // https://github.com/KhronosGroup/glTF/issues/1778#issuecomment-595245431
+            // https://gist.github.com/scurest/5ca8d1cedb27894d8a9b140c2630b6e6
+            // The glTF cubic spline interpolation formula can always be represented 
+            //  by a cubic Bézier with handles always placed 1/3 and 2/3 between the keyframes
+            // SO : we could use speedInOut curves with x = 1/3 next keyframe's frame and y actual gltf handle (tangent) value
+
+            outputIndex = (i * 3) + 1;
+            keyframe.m_type = TDoubleKeyframe::Type::SpeedInOut;
+            if (i > 0) {
+              prevX = (sampler.inputs[i - 1] - sampler.inputs[i]) /
+                      3.0;   // prev kf frames distance / 3
+              prevX *= fps;  // seconds to frames (without 0 offset, it's just a
+                             // distance)
+            } else {
+              prevX = 0.0;
+            }
+            if (i < sampler.inputs.size() - 1) {
+              nextX = (sampler.inputs[i + 1] - sampler.inputs[i]) /
+                      3.0;   // next kf frames distance / 3
+              nextX *= fps;  // seconds to frames (without 0 offset, it's just a
+                             // distance)
+            } else {
+              nextX = 0.0;
+            }
+
             // x
             keyframe.m_value =
                 sampler.outputs[outputIndex].x * lengthMultiplier;
             if (outputIndex > 0)
-              keyframe.m_speedIn.x = sampler.outputs[outputIndex - 1].x;
-            else
-              keyframe.m_speedIn.x = 0;
+              keyframe.m_speedIn =
+                  TPointD(prevX, -sampler.outputs[outputIndex - 1].x);
             if (outputIndex < sampler.outputs.size() - 1)
-              keyframe.m_speedOut.x = sampler.outputs[outputIndex + 1].x;
-            else
-              keyframe.m_speedOut.x = 0;
+              keyframe.m_speedOut =
+                  TPointD(nextX, sampler.outputs[outputIndex + 1].x);
             tx.push_back(keyframe);
+            DVGui::info("tx@" + QString::number(frame) +
+                        " speedIn: " + QString::number(keyframe.m_speedIn.x) +
+                        " " + QString::number(keyframe.m_speedIn.y) + " " +
+                        " speedOut: " + QString::number(keyframe.m_speedOut.x) +
+                        " " + QString::number(keyframe.m_speedOut.y) + " ");
             // y
             keyframe.m_value =
                 sampler.outputs[outputIndex].y * lengthMultiplier;
             if (outputIndex > 0)
-              keyframe.m_speedIn.x = sampler.outputs[outputIndex - 1].y;
-            else
-              keyframe.m_speedIn.x = 0;
+              keyframe.m_speedIn =
+                  TPointD(prevX, -sampler.outputs[outputIndex - 1].y);
             if (outputIndex < sampler.outputs.size() - 1)
-              keyframe.m_speedOut.x = sampler.outputs[outputIndex + 1].y;
-            else
-              keyframe.m_speedOut.x = 0;
+              keyframe.m_speedOut =
+                  TPointD(nextX, sampler.outputs[outputIndex + 1].y);
             ty.push_back(keyframe);
+            DVGui::info("ty@" + QString::number(frame) +
+                        " speedIn: " + QString::number(keyframe.m_speedIn.x) +
+                        " " + QString::number(keyframe.m_speedIn.y) + " " +
+                        " speedOut: " + QString::number(keyframe.m_speedOut.x) +
+                        " " + QString::number(keyframe.m_speedOut.y) + " ");
             // z
             keyframe.m_value =
                 sampler.outputs[outputIndex].z * lengthMultiplier;
             if (outputIndex > 0)
-              keyframe.m_speedIn.x = sampler.outputs[outputIndex - 1].z;
-            else
-              keyframe.m_speedIn.x = 0;
+              keyframe.m_speedIn =
+                  TPointD(prevX, -sampler.outputs[outputIndex - 1].z);
             if (outputIndex < sampler.outputs.size() - 1)
-              keyframe.m_speedOut.x = sampler.outputs[outputIndex + 1].z;
-            else
-              keyframe.m_speedOut.x = 0;
+              keyframe.m_speedOut =
+                  TPointD(nextX, sampler.outputs[outputIndex + 1].z);
             tz.push_back(keyframe);
+            DVGui::info("tz@" + QString::number(frame) +
+                        " speedIn: " + QString::number(keyframe.m_speedIn.x) +
+                        " " + QString::number(keyframe.m_speedIn.y) + " " +
+                        " speedOut: " + QString::number(keyframe.m_speedOut.x) +
+                        " " + QString::number(keyframe.m_speedOut.y) + " ");
           } else {
             if (sampler.interpolation == INTERPOLATION_TYPE::LINEAR)
               keyframe.m_type = TDoubleKeyframe::Type::Linear;
@@ -376,17 +448,36 @@ void ImportGltfCommand::execute() {
           }
         } else if (channel.path_type == PATH_TYPE::ROTATION) {
           if (sampler.interpolation == INTERPOLATION_TYPE::CUBICSPLINE) {
-              // using only z axis tangents ?
-            keyframe.m_type = TDoubleKeyframe::Type::EaseInOut;
+            // we convert quaternion (4d) to rool (1d) : using only z axis tangents ?
             outputIndex     = (i * 3) + 1;
+            keyframe.m_type = TDoubleKeyframe::Type::SpeedInOut;
+            if (i > 0) {
+              prevX = (sampler.inputs[i - 1] - sampler.inputs[i]) /
+                      3.0;   // prev kf frames distance / 3
+              prevX *= fps;  // seconds to frames (without 0 offset, it's just a
+                             // distance)
+            } else {
+              prevX = 0.0;
+            }
+            if (i < sampler.inputs.size() - 1) {
+              nextX = (sampler.inputs[i + 1] - sampler.inputs[i]) /
+                      3.0;   // next kf frames distance / 3
+              nextX *= fps;  // seconds to frames (without 0 offset, it's just a
+                             // distance)
+            } else {
+              nextX = 0.0;
+            }
             if (outputIndex > 0)
-              keyframe.m_speedIn.x = sampler.outputs[outputIndex - 1].z;
-            else
-              keyframe.m_speedIn.x = 0;
+              keyframe.m_speedIn =
+                  TPointD(prevX, -sampler.outputs[outputIndex - 1].z);
             if (outputIndex < sampler.outputs.size() - 1)
-              keyframe.m_speedOut.x = sampler.outputs[outputIndex + 1].z;
-            else
-              keyframe.m_speedOut.x = 0;
+              keyframe.m_speedOut =
+                  TPointD(nextX, sampler.outputs[outputIndex + 1].z);
+            DVGui::info("angle@" + QString::number(frame) +
+                        " speedIn: " + QString::number(keyframe.m_speedIn.x) +
+                        " " + QString::number(keyframe.m_speedIn.y) + " " +
+                        " speedOut: " + QString::number(keyframe.m_speedOut.x) +
+                        " " + QString::number(keyframe.m_speedOut.y) + " ");
           } else {
             if (sampler.interpolation == INTERPOLATION_TYPE::LINEAR)
               keyframe.m_type = TDoubleKeyframe::Type::Linear;
@@ -400,33 +491,79 @@ void ImportGltfCommand::execute() {
               sampler.outputs[outputIndex].y, sampler.outputs[outputIndex].z);
           angle.push_back(keyframe);
         } else if (channel.path_type == PATH_TYPE::SCALE) {
+          // x y scale
           if (sampler.interpolation == INTERPOLATION_TYPE::CUBICSPLINE) {
-            keyframe.m_type = TDoubleKeyframe::Type::EaseInOut;
             outputIndex     = (i * 3) + 1;
+            keyframe.m_type = TDoubleKeyframe::Type::SpeedInOut;
+            if (i > 0) {
+              prevX = (sampler.inputs[i - 1] - sampler.inputs[i]) /
+                      3.0;   // prev kf frames distance / 3
+              prevX *= fps;  // seconds to frames (without 0 offset, it's just a
+                             // distance)
+            } else {
+              prevX = 0.0;
+            }
+            if (i < sampler.inputs.size() - 1) {
+              nextX = (sampler.inputs[i + 1] - sampler.inputs[i]) /
+                      3.0;   // next kf frames distance / 3
+              nextX *= fps;  // seconds to frames (without 0 offset, it's just a
+                             // distance)
+            } else {
+              nextX = 0.0;
+            }
+            // sx
+            keyframe.m_value =
+                sampler.outputs[outputIndex].x * lengthMultiplier;
             if (outputIndex > 0)
-              keyframe.m_speedIn.x = sampler.outputs[outputIndex - 1].x;
-            else
-              keyframe.m_speedIn.x = 0;
+              keyframe.m_speedIn =
+                  TPointD(prevX, -sampler.outputs[outputIndex - 1].x);
             if (outputIndex < sampler.outputs.size() - 1)
-              keyframe.m_speedOut.x = sampler.outputs[outputIndex + 1].x;
-            else
-              keyframe.m_speedOut.x = 0;
+              keyframe.m_speedOut =
+                  TPointD(nextX, sampler.outputs[outputIndex + 1].x);
+            sx.push_back(keyframe);
+            DVGui::info("sx@" + QString::number(frame) +
+                        " speedIn: " + QString::number(keyframe.m_speedIn.x) +
+                        " " + QString::number(keyframe.m_speedIn.y) + " " +
+                        " speedOut: " + QString::number(keyframe.m_speedOut.x) +
+                        " " + QString::number(keyframe.m_speedOut.y) + " ");
+            // sy
+            keyframe.m_value =
+                sampler.outputs[outputIndex].y * lengthMultiplier;
+            if (outputIndex > 0)
+              keyframe.m_speedIn =
+                  TPointD(prevX, -sampler.outputs[outputIndex - 1].y);
+            if (outputIndex < sampler.outputs.size() - 1)
+              keyframe.m_speedOut =
+                  TPointD(nextX, sampler.outputs[outputIndex + 1].y);
+            sx.push_back(keyframe);
+            DVGui::info("sy@" + QString::number(frame) +
+                        " speedIn: " + QString::number(keyframe.m_speedIn.x) +
+                        " " + QString::number(keyframe.m_speedIn.y) + " " +
+                        " speedOut: " + QString::number(keyframe.m_speedOut.x) +
+                        " " + QString::number(keyframe.m_speedOut.y) + " ");
           } else {
             if (sampler.interpolation == INTERPOLATION_TYPE::LINEAR)
               keyframe.m_type = TDoubleKeyframe::Type::Linear;
             else if (sampler.interpolation == INTERPOLATION_TYPE::STEP)
               keyframe.m_type = TDoubleKeyframe::Type::Constant;
             outputIndex = i;
+            // x
+            keyframe.m_value =
+                sampler.outputs[outputIndex].x * lengthMultiplier;
+            sx.push_back(keyframe);
+            // y
+            keyframe.m_value =
+                sampler.outputs[outputIndex].y * lengthMultiplier;
+            sy.push_back(keyframe);
           }
-          keyframe.m_value = sampler.outputs[outputIndex].x * lengthMultiplier;
-          tx.push_back(keyframe);
-          scale.push_back(keyframe);
         }
       }
       addKeyframes(tx, stageObject, TStageObject::Channel::T_X);
       addKeyframes(ty, stageObject, TStageObject::Channel::T_Y);
       addKeyframes(tz, stageObject, TStageObject::Channel::T_Z);
       addKeyframes(angle, stageObject, TStageObject::Channel::T_Angle);
+      addKeyframes(sx, stageObject, TStageObject::Channel::T_ScaleX);
+      addKeyframes(sy, stageObject, TStageObject::Channel::T_ScaleY);
     }
   }
   app->getCurrentXsheet()->notifyXsheetChanged();
