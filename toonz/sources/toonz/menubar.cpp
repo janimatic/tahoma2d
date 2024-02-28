@@ -342,6 +342,7 @@ void TopBar::loadMenubar() {
   { 
     addMenuItem(importMenu, MI_ImportMagpieFile); 
     addMenuItem(importMenu, MI_ImportOCA);
+    addMenuItem(importMenu, MI_ImportXClip);
   }
   QMenu *exportMenu = fileMenu->addMenu(tr("Export"));
   {
@@ -349,6 +350,7 @@ void TopBar::loadMenubar() {
     addMenuItem(exportMenu, MI_SoundTrack);
     addMenuItem(exportMenu, MI_ExportXDTS);
     addMenuItem(exportMenu, MI_ExportOCA);
+    addMenuItem(exportMenu, MI_ExportXClip);
     addMenuItem(exportMenu, MI_ExportXsheetPDF);
     addMenuItem(exportMenu, MI_StopMotionExportImageSequence);
     addMenuItem(exportMenu, MI_ExportTvpJson);

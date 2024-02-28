@@ -1895,6 +1895,14 @@ void MainWindow::defineActions() {
       QT_TRANSLATE_NOOP("MainWindow", "Import Open Cel Animation (OCA)"), "",
       "import_oca");
   createMenuFileAction(
+      MI_ExportXClip,
+      QT_TRANSLATE_NOOP("MainWindow", "Export Keyframe Animation (XCLIP)"), "",
+      "export_xclip");
+  createMenuFileAction(
+      MI_ImportXClip,
+      QT_TRANSLATE_NOOP("MainWindow", "Import  Keyframe Animation (XCLIP)"), "",
+      "import_xclip");
+  createMenuFileAction(
       MI_ExportTvpJson,
       QT_TRANSLATE_NOOP("MainWindow", "Export TVPaint JSON File"), "",
       "export_tvpaint");

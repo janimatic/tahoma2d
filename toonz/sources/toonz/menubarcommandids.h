@@ -496,6 +496,8 @@
 #define MI_ExportTvpJson "MI_ExportTvpJson"
 #define MI_ExportXsheetPDF "MI_ExportXsheetPDF"
 #define MI_ExportCameraTrack "MI_ExportCameraTrack"
+#define MI_ExportXClip "MI_ExportXClip"
+#define MI_ImportXClip "MI_ImportXClip"
 
 // mark id is added for each actual command (i.g. MI_SetCellMark1)
 #define MI_SetCellMark "MI_SetCellMark"

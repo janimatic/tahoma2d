@@ -394,6 +394,7 @@ set(SOURCES
     viewereventlogpopup.cpp
     xshbreadcrumbs.cpp
     alignmentpane.cpp
+    xclipio.cpp
 )
 
 if(WITH_TRANSLATION)
@@ -440,6 +441,8 @@ if(BUILD_TARGET_WIN)
         -D_UNICODE
     )
 endif()
+
+add_subdirectory(xclip)
 
 message("subdir: toonz")
 message("Bin: " ${CMAKE_CURRENT_BINARY_DIR})
