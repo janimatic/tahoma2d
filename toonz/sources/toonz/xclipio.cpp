@@ -20,56 +20,6 @@
 
 #include "xclip/xclip.h"
 
-// keyframes
-//static void addKeyframe(double value, TDoubleKeyframe::Type type, int frame,
-//                        TStageObject *object, TStageObject::Channel channel) {
-//  TDoubleKeyframe dkf;
-//  dkf.m_value = value;
-//  dkf.m_type  = type;
-//  dkf.m_frame = frame;
-//  auto param  = object->getParam(channel);
-//  param->setKeyframe(dkf);
-//  std::string message = "addKeyframe: " + std::to_string(value) + " " +
-//                        std::to_string(frame) + " " + object->getName();
-//  DVGui::info(QString::fromStdString(message));
-//}
-//static void addKeyframe(double value, TPointD speedIn, TPointD speedOut,
-//                        TDoubleKeyframe::Type type, int frame,
-//                        TStageObject *object, TStageObject::Channel channel) {
-//  TDoubleKeyframe dkf;
-//  dkf.m_value = value;
-//  dkf.m_speedIn  = speedIn;
-//  dkf.m_speedOut = speedOut;
-//  dkf.m_type  = type;
-//  dkf.m_frame = frame;
-//  auto param  = object->getParam(channel);
-//  param->setKeyframe(dkf);
-//  std::string message = "addKeyframe: " + std::to_string(value) + " " +
-//                        std::to_string(frame) + " " + object->getName();
-//  DVGui::info(QString::fromStdString(message));
-//}
-//static void addKeyframes(const std::vector<TDoubleKeyframe> &ks,
-//                         TStageObject *object, TStageObject::Channel channel) {
-//  auto param = object->getParam(channel);
-//  for (auto k : ks) {
-//    if (k.m_type == TDoubleKeyframe::Type::SpeedInOut || k.m_type == TDoubleKeyframe::Type::EaseInOut || k.m_type == TDoubleKeyframe::Type::EaseInOutPercentage)
-//      addKeyframe(k.m_value, k.m_speedIn, k.m_speedOut, k.m_type, k.m_frame,
-//                  object, channel);
-//    else
-//      addKeyframe(k.m_value, k.m_type, k.m_frame, object, channel);
-//  }
-//}
-//static void setKeyframes(const std::map<int, TDoubleKeyframe> &ks,
-//                         TStageObject *object, TStageObject::Channel channel) {
-//  auto param = object->getParam(channel);
-//  for (auto k : ks) {
-//    if (param->getKeyframeCount() < k.first) {
-//      DVGui::info("setKeyframes only changes existing keyframes...");
-//      return;
-//    }
-//  }
-//  param->setKeyframes(ks);
-//}
 static void addKeyframes(const std::vector<TDoubleKeyframe> &ks,
                          TDoubleParam *param) {
   for (auto k : ks) {
@@ -88,7 +38,6 @@ static void addKeyframes(const std::vector<TDoubleKeyframe> &ks,
 
 static void tDataToXTrack(std::vector<TDoubleKeyframe> &keys,
                                XTrack *track, float fps) {
-  //DVGui::info("xclipio tDataToXTrack: " + QString::fromStdString(track->getName()));
   for (int i = 0; i < keys.size(); i++) {
     auto kf = keys[i];
     if (kf.m_type == TDoubleKeyframe::Type::SpeedInOut) {
@@ -137,7 +86,6 @@ static void tParamToXTrack(TDoubleParam *param, XTrack *track, float fps) {
 // use with addKeyframes(keys, stageObject->getParam(channel));
 static void xTrackToTData(XTrack *track, std::vector<TDoubleKeyframe> &keys,
                                float fps) {
-  //DVGui::info("xclipio xTrackToTData: " + QString::fromStdString(track->getName()));
   for (auto key : track->getKeys()) {
     TDoubleKeyframe keyframe;
     keyframe.m_frame = (key->time * fps) + 1;
@@ -202,14 +150,13 @@ static std::map<std::string, TStageObject *> getTNodes() {
   std::map<std::string, TStageObject *> result;
   TStageObject *stageObject;
   for (int col = 0; col < xsheet->getColumnCount(); col++) {
-    // TXshCellColumn *column = xsheet->getColumn(col)->getCellColumn();
-    // if (!column) continue;  // skip non-cell column
     stageObject = xsheet->getStageObject(TStageObjectId::ColumnId(col));
     result[stageObject->getName()] = stageObject;
   }
   auto cameraId     = xsheet->getStageObjectTree()->getCurrentCameraId();
   auto cameraObject = xsheet->getStageObject(cameraId);
   result[cameraObject->getName()] = cameraObject;
+  return result;
 }
 
 class ExportXClipCommand final : public MenuItemHandler {
@@ -253,23 +200,10 @@ void ExportXClipCommand::execute() {
   XClip xclip;
 
   // export all columns (cell + camera)
-  //auto tNodes = getTNodes();
-  std::map<std::string, TStageObject *> tNodes;
-  for (int col = 0; col < xsheet->getColumnCount(); col++) {
-    // TXshCellColumn *column = xsheet->getColumn(col)->getCellColumn();
-    // if (!column) continue;  // skip non-cell column
-    stageObject = xsheet->getStageObject(TStageObjectId::ColumnId(col));
-    tNodes[stageObject->getName()] = stageObject;
-  }
-  auto cameraId     = xsheet->getStageObjectTree()->getCurrentCameraId();
-  auto cameraObject = xsheet->getStageObject(cameraId);
-  tNodes[cameraObject->getName()] = cameraObject;
-
+  auto tNodes = getTNodes();
   for (auto tNode : tNodes) {
     auto node   = xclip.addNode(tNode.first);
     stageObject = tNode.second;
-    // DVGui::info("xclipio addNode: " +
-    //            QString::fromStdString(stageObject->getName()));
     tParamToXTrack(stageObject->getParam(TStageObject::Channel::T_X),
                        node->addTrack("tx"), fps);
     tParamToXTrack(stageObject->getParam(TStageObject::Channel::T_Y),
@@ -284,7 +218,6 @@ void ExportXClipCommand::execute() {
                         node->addTrack("sy"), fps);
     tParamToXTrack(stageObject->getParam(TStageObject::Channel::T_Angle),
                         node->addTrack("angle"), fps);
-    /*
     // rotation should be converted to quaternion...
     // rollDegreeToQuaternion()
     std::vector<TDoubleKeyframe> angle;
@@ -318,26 +251,8 @@ void ExportXClipCommand::execute() {
     node->getTrack("rx")->setValue(q.x);
     node->getTrack("ry")->setValue(q.y);
     node->getTrack("rz")->setValue(q.z);
-    */
   }
 
-  //// export the camera...
-  //auto cameraId     = xsheet->getStageObjectTree()->getCurrentCameraId();
-  //auto cameraObject = xsheet->getStageObject(cameraId);
-  //tNodes[cameraObject->getName()] = cameraObject;
-  //auto node                      = xclip.addNode(cameraObject->getName());
-  //tParamToXTrack(cameraObject->getParam(TStageObject::Channel::T_X),
-  //               node->addTrack("tx"), fps);
-  //tParamToXTrack(cameraObject->getParam(TStageObject::Channel::T_Y),
-  //               node->addTrack("ty"), fps);
-  //tParamToXTrack(cameraObject->getParam(TStageObject::Channel::T_Z),
-  //               node->addTrack("tz"), fps);
-  //tParamToXTrack(cameraObject->getParam(TStageObject::Channel::T_Angle),
-  //               node->addTrack("angle"), fps);
-
-  //auto root = xclip.addNode("root");
-  //auto tx = root->addTrack("tx");
-  //tx->addKey(new XBezierFloatKey());
   xclip.updateTimeRange();
   if (!xclip.write(fp.getQString().toStdString())) {
     DVGui::warning("ExportXClipCommand: failed to write to " + fp.getQString());
@@ -412,7 +327,6 @@ void ImportXClipCommand::execute() {
       xTrackToTData(track.second, keys, fps);
       addKeyframes(keys, stageObject->getParam(channel));
     }
-    /*
     // rotation : if no angle was found,
     // convert quaternion to roll :
     // the 4 quaternion channels must have the same number of keyframes !
@@ -451,10 +365,9 @@ void ImportXClipCommand::execute() {
         keyframe.m_value = quaternionToRollDegree(rw[i].m_value, rx[i].m_value,
                                                   ry[i].m_value, rz[i].m_value);
         angle.push_back(keyframe);
+        addKeyframes(angle, stageObject->getParam(channel));
       }
-      addKeyframes(angle, stageObject->getParam(channel));
     }
-    */
   }
   TApp::instance()->getCurrentXsheet()->notifyXsheetChanged();
   auto tokens = QString::fromStdString(xclip.dump()).split('\n');

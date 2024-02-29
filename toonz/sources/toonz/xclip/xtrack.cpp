@@ -113,28 +113,6 @@ Interpolation interpolation = static_cast<Interpolation>(int(data[0]));
     break;
   }
 }
-//void XTrack::addKey(f64 time, std::vector<f64> const& data,
-//                    Interpolation interpolation) {
-//  switch (interpolation) {
-//  case Interpolation::NONE:
-//    break;
-//  case Interpolation::BEZIER:
-//    if (data.size() < 5)
-//      debugPrint(" missing data for bezier key!");
-//    else
-//      addKey(new XBezierFloatKey(time, data[0], data[1], data[2], data[3],
-//                                 data[4]));
-//    break;
-//  case Interpolation::LINEAR:
-//    addKey(new XLinearFloatKey(time, data[0]));
-//    break;
-//  case Interpolation::STEP:
-//    for (auto k : data) addKey(new XStepFloatKey(time, data[0]));
-//    break;
-//  default:
-//    break;
-//  }
-//}
 
 // using string keys to conform to python dictionary...
 void XTrack::addKeys(std::map<std::string, std::vector<f64>>& data,
@@ -161,47 +139,6 @@ void XTrack::addKeys(std::map<std::string, std::vector<f64>>& data,
     break;
   }
 }
-
-//void XTrack::addKeysFromTable(std::vector<f64>& data,
-//                              Interpolation interpolation) {
-//  switch (interpolation) {
-//  case Interpolation::NONE:
-//    break;
-//  case Interpolation::BEZIER:
-//    for (int k = 0; k < data.size(); k += 6) {
-//      addKey(new XBezierFloatKey(data[0 + k], data[1 + k], data[2 + k],
-//                                 data[3 + k], data[4 + k], data[5 + k]));
-//    }
-//    break;
-//  // case Interpolation::LINEAR:
-//  //	for (auto k : data)
-//  //		addKey(new XLinearFloatKey(stof(k.first), k.second[0]));
-//  //	break;
-//  // case Interpolation::STEP:
-//  //	for (auto k : data)
-//  //		addKey(new XStepFloatKey(stof(k.first), k.second[0]));
-//  //	break;
-//  default:
-//    break;
-//  }
-//}
-
-///// <summary>
-///// return keyframes as f64 data = {  f64(interpolation), time , val,
-///inTangent.x , inTangent.y, outTangent.x , outTangent.y };
-///// The map key is time (converted to string for python compatibility)
-///// Use getKeys with dynamic_cast instead, to access objects instead of flat
-///data...
-///// </summary>
-///// <returns></returns>
-// std::map<std::string, std::vector<f64>> XTrack::getKeysMap()
-//{
-//	auto result = std::map<std::string, std::vector<f64>>();
-//	for (auto key : keys) {
-//		result[std::to_string(key->time)] = key->asVector();
-//	}
-//	return result;
-//}
 
 f64 XTrack::evaluateAtTime(f64 time) {
   // TODO :
