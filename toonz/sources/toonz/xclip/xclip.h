@@ -75,7 +75,7 @@ public:
   bool write(std::string filename);
   bool read(std::string filename);
   XNode* addNode(std::string nodeName, std::string path = "",
-                 unsigned long id = -1);
+                 u64 id = -1);
   XNode* addNode(XNode* node);
   void clear();
   std::string dump();

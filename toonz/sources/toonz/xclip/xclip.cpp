@@ -116,8 +116,7 @@ bool XClip::read(std::string filename) {
   return true;
 }
 
-XNode* XClip::addNode(std::string nodeName, std::string path,
-                      unsigned long id) {
+XNode* XClip::addNode(std::string nodeName, std::string path, u64 id) {
   XNode* node = new XNode(nodeName);
   node->setPath(path);
   node->setId(id);

@@ -20,6 +20,8 @@
 
 #include "xclip/xclip.h"
 
+//#define USE_QUAT
+
 static void addKeyframes(const std::vector<TDoubleKeyframe> &ks,
                          TDoubleParam *param) {
   for (auto k : ks) {
@@ -218,6 +220,7 @@ void ExportXClipCommand::execute() {
                         node->addTrack("sy"), fps);
     tParamToXTrack(stageObject->getParam(TStageObject::Channel::T_Angle),
                         node->addTrack("angle"), fps);
+#ifdef USE_QUAT
     // rotation should be converted to quaternion...
     // rollDegreeToQuaternion()
     std::vector<TDoubleKeyframe> angle;
@@ -251,6 +254,7 @@ void ExportXClipCommand::execute() {
     node->getTrack("rx")->setValue(q.x);
     node->getTrack("ry")->setValue(q.y);
     node->getTrack("rz")->setValue(q.z);
+#endif
   }
 
   xclip.updateTimeRange();
@@ -327,6 +331,7 @@ void ImportXClipCommand::execute() {
       xTrackToTData(track.second, keys, fps);
       addKeyframes(keys, stageObject->getParam(channel));
     }
+#ifdef USE_QUAT
     // rotation : if no angle was found,
     // convert quaternion to roll :
     // the 4 quaternion channels must have the same number of keyframes !
@@ -368,6 +373,7 @@ void ImportXClipCommand::execute() {
         addKeyframes(angle, stageObject->getParam(channel));
       }
     }
+#endif
   }
   TApp::instance()->getCurrentXsheet()->notifyXsheetChanged();
   auto tokens = QString::fromStdString(xclip.dump()).split('\n');
