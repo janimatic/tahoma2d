@@ -29,10 +29,11 @@ public:
   // void addKey(f64 time, std::vector<f64> const &data, Interpolation
   // interpolation);
   void addKey(std::vector<f64> const& data);
+  //void addKey(std::vector<double> const& data);
   void addKeys(std::map<std::string, std::vector<f64>>& data,
                Interpolation interpolation);
-  // void addKeysFromTable(std::vector<f64> &data, Interpolation
-  // interpolation);
+   void addKeysFromTable(std::vector<f64> &data, Interpolation
+   interpolation);
   std::vector<XKey*> getKeys() const { return keys; }
   // std::map<std::string, std::vector<f64>> getKeysMap();
   std::string getName() const { return name; }

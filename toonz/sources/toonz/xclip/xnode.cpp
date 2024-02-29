@@ -9,13 +9,13 @@ std::vector<f64> xform3dValues = {
 XNode::XNode() : XNode("") {}
 
 XNode::XNode(std::string _name) : name(_name), path(""), id(0) {
-  debugPrint(this->name);
+  //debugPrint(this->name);
   for (int i = 0; i < xform3dChannels.size() && i < xform3dValues.size(); i++)
     addTrack(xform3dChannels[i], xform3dValues[i]);
 }
 
 void XNode::write(std::fstream& file) {
-  debugPrint(this->name);
+  //debugPrint(this->name);
   IO::write_TAG(file, "NODE");
   IO::write_STRING(file, name);
   IO::write_STRING(file, path);
@@ -34,7 +34,7 @@ void XNode::read(std::fstream& file) {
   path = IO::read_STRING(file);
   file.read(reinterpret_cast<char*>(&id), sizeof(u64));
   file.read(reinterpret_cast<char*>(&trackCount), sizeof(u64));
-  debugPrint(this->name);
+  //debugPrint(this->name);
 }
 
 void XNode::readAll(std::fstream& file) {
@@ -48,11 +48,11 @@ void XNode::readAll(std::fstream& file) {
     tracks[track->getName()] = track;
     tracksFound++;
   }
-  debugPrint(this->name);
+  //debugPrint(this->name);
 }
 
 XTrack* XNode::addTrack(std::string name, f64 value) {
-  debugPrint(this->name);
+  //debugPrint(this->name);
   XTrack* track;
   if (tracks.find(name) != tracks.end()) {
     debugPrint(this->name + " replacing track: " + name);

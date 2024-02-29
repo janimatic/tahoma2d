@@ -5,7 +5,7 @@ XTrack::XTrack() : XTrack("") {}
 XTrack::XTrack(std::string _name) : name(_name) {}
 
 void XTrack::write(std::fstream& file) {
-  debugPrint(this->name + " keys.size(): " + std::to_string(keys.size()));
+  //debugPrint(this->name + " keys.size(): " + std::to_string(keys.size()));
   IO::write_TAG(file, "TRCK");
   file.write(reinterpret_cast<char*>(&flags), sizeof(u64));
   IO::write_STRING(file, name);
@@ -26,7 +26,7 @@ void XTrack::read(std::fstream& file) {
   path = IO::read_STRING(file);
   value = IO::read_FLOAT(file);
   file.read(reinterpret_cast<char*>(&keyCount), sizeof(u64));
-  debugPrint(this->name + " keyCount: " + std::to_string(keyCount));
+  // debugPrint(this->name + " keyCount: " + std::to_string(keyCount));
 }
 
 void XTrack::readAll(std::fstream& file) {
@@ -84,10 +84,11 @@ void XTrack::addKey(XKey* key) {
 /// </summary>
 /// <param name="data"></param>
 void XTrack::addKey(std::vector<f64> const& data) {
+//void XTrack::addKey(std::vector<double> const& data) {
   if (data.size() < 7) {
     debugPrint("empty data !");
   }
-Interpolation interpolation = static_cast<Interpolation>(int(data[0]));
+  Interpolation interpolation = static_cast<Interpolation>(int(data[0]));
   switch (interpolation) {
   case Interpolation::NONE:
     break;
@@ -115,6 +116,7 @@ Interpolation interpolation = static_cast<Interpolation>(int(data[0]));
 }
 
 // using string keys to conform to python dictionary...
+// but lua is not happy...
 void XTrack::addKeys(std::map<std::string, std::vector<f64>>& data,
                      Interpolation interpolation) {
   switch (interpolation) {
@@ -138,6 +140,29 @@ void XTrack::addKeys(std::map<std::string, std::vector<f64>>& data,
   default:
     break;
   }
+}
+
+void XTrack::addKeysFromTable(std::vector<f64>& data, Interpolation interpolation)
+{
+	switch (interpolation)
+	{
+	case Interpolation::NONE:
+		break;
+	case Interpolation::BEZIER:
+		for (int k = 0; k < data.size(); k += 7)
+			addKey(new XBezierFloatKey(data[1 + k], data[2 + k], data[3 + k], data[4 + k], data[5 + k], data[6 + k]));
+		break;
+	case Interpolation::LINEAR:
+        for (int k = 0; k < data.size(); k += 3)
+            addKey(new XLinearFloatKey(data[1 + k], data[2 + k]));
+        break;
+	case Interpolation::STEP:
+        for (int k = 0; k < data.size(); k += 3)
+            addKey(new XStepFloatKey(data[1 + k], data[2 + k]));
+        break;
+	default:
+		break;
+	}
 }
 
 f64 XTrack::evaluateAtTime(f64 time) {

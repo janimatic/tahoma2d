@@ -94,12 +94,12 @@ public:
 			ss << (*ii).first << "=" << (*ii).second << std::endl;
 		}
 		std::string result=ss.str();
-		debugPrint("\n" + result);
+		//debugPrint("\n" + result);
 		return result;
 	}
 	void buildMap(std::string str)
 	{
-		debugPrint("\n" + str);
+		//debugPrint("\n" + str);
 		if (str == "") {
 			return;
 		}

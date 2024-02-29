@@ -140,6 +140,8 @@ void XClip::clear() {
 
 std::string XClip::dump() {
   std::stringstream str;
+  str << "xclip header  " << header << std::endl;
+  str << "xclip user data " << std::endl << userDataString << std::endl;
   for (auto node : nodes) {
     str << " xclip node " << node->name << std::endl;
     for (auto track : node->tracks) {
