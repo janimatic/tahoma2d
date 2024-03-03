@@ -77,6 +77,7 @@ public:
   XNode* addNode(std::string nodeName, std::string path = "",
                  u64 id = -1);
   XNode* addNode(XNode* node);
+  XNode* findNode(std::string name);
   void clear();
   std::string dump();
   XUserData* getUserData() { return &uData; }

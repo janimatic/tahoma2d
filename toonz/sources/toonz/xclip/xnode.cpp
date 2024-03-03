@@ -1,4 +1,5 @@
 #include "xnode.h"
+#include "stringutils.h"
 
 std::vector<std::string> xform3dChannels = {
     "tx", "ty", "tz", "rw", "rx", "ry", "rz", "sx", "sy", "sz",
@@ -45,7 +46,7 @@ void XNode::readAll(std::fstream& file) {
     XTrack* track = new XTrack();
     track->readAll(file);
     // this->tracks.push_back(track);
-    tracks[track->getName()] = track;
+    tracks[track->name] = track;
     tracksFound++;
   }
   //debugPrint(this->name);
@@ -60,7 +61,7 @@ XTrack* XNode::addTrack(std::string name, f64 value) {
   } else {
     track = new XTrack(name);
   }
-  track->setValue(value);
+  track->value = value;
   // this->tracks.push_back(track);
   tracks[name] = track;
   return track;
@@ -71,4 +72,61 @@ XTrack* XNode::getTrack(std::string name) {
   debugPrint(this->name + " track " + name + " not found ! creating a new track...");
   //throw std::runtime_error("XNode::getTrack : track " + name + " not found...");
   return addTrack(name);
+}
+
+/// <summary>
+/// fast method to lookup tracks by name using optional wildcards (? *), and optionally only tracks with keys
+/// </summary>
+/// <param name="name">track name can optionally use wildcards such as abc*def 
+/// (* represents any of characters) or abc?def (* represents any single character)</param>
+/// <param name="withKeys">returns only true if found tracks has keys</param>
+/// <returns>true if tracks matching conditions have been found</returns>
+bool XNode::hasTrack(std::string name, bool withKeys)
+{
+    if (name.find("?") != std::string::npos || name.find("*") != std::string::npos) {
+        for (auto track : tracks) {
+            debugPrint(" wildcard search: " + name + " in line: " + track.first);
+            if (string_utils::wildmatch(name.c_str(), track.first.c_str()))
+                return withKeys ? track.second->getKeys().size() > 0 : true;
+        }
+    }
+    return tracks.find(name) != tracks.end();
+}
+
+/// <summary>
+/// fast method to lookup tracks by name using optional wildcards (? *), and optionally only tracks with keys
+/// </summary>
+/// <param name="name">track name can optionally use wildcards such as abc*def 
+/// (* represents any of characters) or abc?def (* represents any single character)</param>
+/// <param name="withKeys">returns only true if found tracks has keys</param>
+/// <returns>a map of name,tracks with tracks matching conditions</returns>
+std::map<std::string, XTrack*> XNode::getTracks(std::string name, bool withKeys)
+{
+    std::map<std::string, XTrack*> matchingTracks;
+    if (name.find("?") != std::string::npos || name.find("*") != std::string::npos) {
+        for (auto track : tracks) {
+            debugPrint(" wildcard search: " + name + " in line: " + track.first);
+            if (string_utils::wildmatch(name.c_str(), track.first.c_str())) {
+                if(!withKeys)
+                    matchingTracks[track.first] = track.second;
+                else if (track.second->getKeys().size() > 0)
+                    matchingTracks[track.first] = track.second;
+            }
+        }
+    }
+    else
+        if(tracks.find(name) != tracks.end())
+            matchingTracks[name] = tracks[name];
+    return matchingTracks;
+}
+
+float XNode::getTracksStartTime(std::string name, bool withKeys)
+{
+    float result = 0.0;
+    auto matchingTracks = getTracks(name, withKeys);
+    for (auto mt : matchingTracks) {
+        return mt.second->getKeys()[0]->time;
+    }
+    debugPrint("no match: returning value 0.0");
+    return 0.0;
 }

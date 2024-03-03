@@ -10,12 +10,12 @@ protected:
   // IO DATA
   u64 keyCount     = 0;
   u64 flags        = 0;
-  std::string name = "";
   std::string path = "";
-  f64 value =
-      0;  // default values are used when there is no key in the track.
+  // use track's value when there is no key in the track.
 
 public:
+  std::string name = "";
+  f64 value = 0;
   XTrack();
   XTrack(std::string _name);
 
@@ -23,8 +23,8 @@ public:
   void read(std::fstream& file);
   void readAll(std::fstream& file);
   inline void setPath(std::string _path) { path = _path; }
-  inline f64 getValue() { return value; }
-  inline void setValue(f64 _value) { value = _value; }
+  //inline f64 getValue() { return value; }
+  //inline void setValue(f64 _value) { value = _value; }
   void addKey(XKey* key);
   // void addKey(f64 time, std::vector<f64> const &data, Interpolation
   // interpolation);
@@ -36,7 +36,7 @@ public:
    interpolation);
   std::vector<XKey*> getKeys() const { return keys; }
   // std::map<std::string, std::vector<f64>> getKeysMap();
-  std::string getName() const { return name; }
+  // std::string getName() const { return name; }
   f64 evaluateAtTime(f64 time);
 };
 

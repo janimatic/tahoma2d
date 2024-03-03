@@ -30,6 +30,9 @@ public:
   inline void setId(u64 _id) { id = _id; }
   XTrack* addTrack(std::string name, f64 value = 0.0);
   XTrack* getTrack(std::string name);
+  bool hasTrack(std::string name, bool withKeys = false);
+  std::map<std::string, XTrack*> getTracks(std::string name, bool withKeys = false);
+  float getTracksStartTime(std::string name, bool withKeys = false);
 };
 
 #endif

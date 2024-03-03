@@ -75,7 +75,7 @@ static void tDataToXTrack(std::vector<TDoubleKeyframe> &keys,
   }
 }
 static void tParamToXTrack(TDoubleParam *param, XTrack *track, float fps) {
-  track->setValue(param->getDefaultValue());
+  track->value = param->getDefaultValue();
   std::vector<TDoubleKeyframe> keys;
   for (int i = 0; i < param->getKeyframeCount(); i++) {
     auto kf = param->getKeyframe(i);
@@ -327,7 +327,7 @@ void ImportXClipCommand::execute() {
       // xTrackToTParam(track.second, stageObject->getParam(channel), fps);
       std::vector<TDoubleKeyframe> keys;
       // set value, used when there is not keyframe
-      stageObject->getParam(channel)->setDefaultValue(track.second->getValue());
+      stageObject->getParam(channel)->setDefaultValue(track.second->value);
       xTrackToTData(track.second, keys, fps);
       addKeyframes(keys, stageObject->getParam(channel));
     }

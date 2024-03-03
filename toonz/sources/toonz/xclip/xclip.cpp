@@ -1,16 +1,17 @@
 #include "xclip.h"
 
 XClip::XClip() {
+  //std::cout << "XClip version " << XCLIP_VERSION << std::endl;
   // debugPrint("");
   _NodeState = NodeUndefined;
   nodeCount  = 0;
   // scale = 1.0f;
   // userDataString = "";
+  uData.setIntVariable("version", XCLIP_VERSION);
   uData.setFloatVariable("scale", 1.0);
   uData.setFloatVariable("startTime", 0.0);
   uData.setFloatVariable("endTime", 0.0);
   header = XCLIP_HEADER;
-
   // deprecate ?
   // startFrame = 0.0f;
   // endFrame = 100.0f;
@@ -133,6 +134,15 @@ XNode* XClip::addNode(XNode* node) {
   return node;
 }
 
+XNode* XClip::findNode(std::string name)
+{
+    for (auto node : nodes) {
+        if (node->name == name)
+            return node;
+    }
+    return nullptr;
+}
+
 void XClip::clear() {
   for (auto node : nodes) delete node;
   nodes.clear();
@@ -145,7 +155,7 @@ std::string XClip::dump() {
   for (auto node : nodes) {
     str << " xclip node " << node->name << std::endl;
     for (auto track : node->tracks) {
-      str << "\t xclip track " << track.second->getName() << std::endl;
+      str << "\t xclip track " << track.second->name << " value: " << track.second->value << std::endl;
       for (auto key : track.second->getKeys()) {
         // str << "xclip key " << key->TAG << std::endl;
         if (key->TAG.find("KBFL") != std::string::npos) {

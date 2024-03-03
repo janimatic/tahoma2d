@@ -10,34 +10,40 @@ class string_utils
 public:
 	//*******	FILTER	**********
 	//if (string_utils::wildmatch("bl?h.*", "blah.jpg"))
-	static int wildmatch(const char *wild, const char *string) {
-		const char *cp = NULL, *mp = NULL;
-		while ((*string) && (*wild != '*')) {
-			if ((*wild != *string) && (*wild != '?')) {
-				return 0;
-			}
-			wild++;
-			string++;
-		}
-		while (*string) {
-			if (*wild == '*') {
-				if (!*++wild) {
-					return 1;
-				}
-				mp = wild;
-				cp = string+1;
-			} else if ((*wild == *string) || (*wild == '?')) {
+	static bool wildmatch(const char *wild, const char *line) {
+		bool wildcard = 0;
+		char* placeholder;
+		do
+		{
+			if ((*wild == *line) || (*wild == '?'))
+			{
+				line++;
 				wild++;
-				string++;
-			} else {
-				wild = mp;
-				string = cp++;
 			}
-		}
-		while (*wild == '*') {
-			wild++;
-		}
-		return !*wild;
+			else if (*wild == '*')
+			{
+				if (*(++wild) == '\0')
+					return true;
+				else
+				{
+					placeholder = (char *)wild;
+					wildcard = true;
+				}
+			}
+			else if (wildcard)
+			{
+				if (wild == placeholder)
+					line++;
+				else
+					wild = placeholder;
+			}
+			else
+				return false;
+		} while (*line);
+		if (*wild == '\0')
+			return true;
+		else
+			return false;
 	}
 	//*******	TOKENIZER	**********
 	static void tokenize(	const std::string& str,

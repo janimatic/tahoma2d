@@ -85,4 +85,18 @@ static Quaternion rollDegreeToQuaternion(f64 angle) {
   return toQuaternion(degToRad(angle), 0, 0);
 }
 
+static XPoint2D convertPoint2DCoordsPixelsToNdc(XPoint2D p, float width, float height) {
+	XPoint2D result;
+	result.x = (p.x * 2.0 / width) - 1.0;
+	result.y = (p.y * 2.0 / height) - 1.0;
+	return result;
+}
+
+static XPoint2D convertPoint2DCoordsNdcToPixels(XPoint2D p, float width, float height) {
+	XPoint2D result;
+	result.x = (p.x / 2.0 * width) + 1.0;
+	result.y = (p.y / 2.0 * height) + 1.0;
+	return result;
+}
+
 #endif
